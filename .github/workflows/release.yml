@@ -1,0 +1,42 @@
+
+name: Release
+
+on:
+  create:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.18
+
+      # - name: Get dependencies
+      #   run: make deps
+
+      - name: Build
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o bin/firecracker-task-driver-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o bin/firecracker-task-driver-arm64 .
+
+      - name: Sign
+        run: |
+          echo "${{ hashFiles('bin/firecracker-task-driver-amd64') }}" > bin/firecracker-task-driver-amd64.sha256
+          echo "${{ hashFiles('bin/firecracker-task-driver-arm64') }}" > bin/firecracker-task-driver-arm64.sha256
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            bin/firecracker-task-driver-amd64
+            bin/firecracker-task-driver-arm64
+            bin/firecracker-task-driver-amd64.sha256
+            bin/firecracker-task-driver-arm64.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
